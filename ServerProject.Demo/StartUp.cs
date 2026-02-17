@@ -7,7 +7,7 @@ namespace WebServer.demo
     {
         public static void Main()
         {
-            var server = new HttpServer(routes =>
+            HttpServer server = new HttpServer(routes =>
             {
                 routes
                     .MapGet("/", new TextResponse("Hello from the server!"))
