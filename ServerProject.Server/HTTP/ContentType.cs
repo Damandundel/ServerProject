@@ -1,4 +1,4 @@
-﻿namespace WebServer.Server.HTTP
+﻿namespace ServerProject.Server.HTTP
 {
     public class ContentType
     {

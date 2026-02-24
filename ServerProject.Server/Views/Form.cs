@@ -2,7 +2,7 @@
 using System.Collections.Generic;
 using System.Text;
 
-namespace WebServer.Server.Views
+namespace ServerProject.Server.Views
 {
     public static class Form
     {

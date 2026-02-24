@@ -1,13 +1,13 @@
 ﻿using System.Collections;
 
-namespace WebServer.Server.HTTP_Request
+namespace ServerProject.Server.HTTP_Request
 {
     public class HeaderCollection : IEnumerable<Header>
     {
-        private readonly Dictionary<string, Header> headers;
+        private readonly Dictionary<string, Header > headers;
         public HeaderCollection()
         {
-            headers = new Dictionary<string, Header>();
+            headers = new Dictionary<string, Header >();
         }
 
         public string this[string name]

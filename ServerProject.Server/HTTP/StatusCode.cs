@@ -1,4 +1,4 @@
-﻿namespace WebServer.Server.HTTP_Request
+﻿namespace ServerProject.Server.HTTP_Request
 {
     public enum StatusCode
     {

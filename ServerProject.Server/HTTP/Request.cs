@@ -3,9 +3,9 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Text;
 using System.Web;
-using WebServer.Server.HTTP;
+using ServerProject.Server.HTTP;
 
-namespace WebServer.Server.HTTP_Request
+namespace ServerProject.Server.HTTP_Request
 {
     public class Request
     {
@@ -14,7 +14,6 @@ namespace WebServer.Server.HTTP_Request
         public HeaderCollection Headers { get; private set; }
         public string Body { get; private set; }
 
-        // Ensure FromData is never null by default to avoid NREs when consumers iterate it.
         public IReadOnlyDictionary<string, string> FromData { get; private set; } = new Dictionary<string, string>();
 
         public static Request Parse(string request)
@@ -81,8 +80,12 @@ namespace WebServer.Server.HTTP_Request
         {
             var formCollection = new Dictionary<string, string>();
 
-            if (headers.Contains(Header.ContentType)
-                && headers[Header.ContentType] == ContentType.FormUrlEncodet)
+           
+            const string contentTypeHeader = "Content-Type";
+            const string formUrlEncoded = "application/x-www-form-urlencoded";
+
+            if (headers.Contains(contentTypeHeader)
+                && string.Equals(headers[contentTypeHeader], formUrlEncoded, StringComparison.OrdinalIgnoreCase))
             {
                 var parsedForm = ParseFormData(body);
 

@@ -1,4 +1,4 @@
-﻿namespace WebServer.Server.Common
+﻿namespace ServerProject.Server.Common
 {
     public static class Guard
     {

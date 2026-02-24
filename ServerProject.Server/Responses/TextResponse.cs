@@ -1,7 +1,7 @@
-﻿using WebServer.Server.HTTP;
-using WebServer.Server.HTTP_Request;
+﻿using ServerProject.Server.HTTP;
+using ServerProject.Server.HTTP_Request;
 
-namespace WebServer.Server.Responses
+namespace ServerProject.Server.Responses
 {
     public class TextResponse : ContentResponse
     {

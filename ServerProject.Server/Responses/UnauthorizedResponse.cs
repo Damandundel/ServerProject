@@ -1,6 +1,6 @@
-﻿using WebServer.Server.HTTP_Request;
+﻿using ServerProject.Server.HTTP_Request;
 
-namespace WebServer.Server.Responses
+namespace ServerProject.Server.Responses
 {
     public class UnauthorizedResponse : Response
     {

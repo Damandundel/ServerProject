@@ -1,76 +1,104 @@
-﻿using System.Net;
+﻿using System;
+using System.Collections.Generic;
+using System.Linq;
+using System.Net;
 using System.Net.Sockets;
+using System.Reflection.Metadata;
 using System.Text;
-using WebServer.Server.Contracts;
-using WebServer.Server.HTTP;
-using WebServer.Server.HTTP_Request;
+using System.Threading.Tasks;
+using ServerProject.Server.Contracts;
+using ServerProject.Server.HTTP;
+using ServerProject.Server.Contracts;
+using ServerProject.Server.HTTP;
+using ServerProject.Server.HTTP_Request;
 
-namespace WebServer.Server
+namespace ServerProject.Server
 {
     public class HttpServer
     {
         private readonly IPAddress ipAddress;
         private readonly int port;
         private readonly TcpListener serverListener;
-        private readonly RoutingTable routingTable;
 
-        public HttpServer(string ipAddress, int port, Action<IRoutingTable> routingTableConfiguration)
+        private readonly RoutingTable routes;
+
+        public HttpServer(string ipAddress, int port
+            , Action<IRoutingTable> routingTableConfigurtion)
         {
-
             this.ipAddress = IPAddress.Parse(ipAddress);
             this.port = port;
-            this.serverListener = new TcpListener(this.ipAddress, port);
+            this.serverListener = new TcpListener(this.ipAddress, this.port);
 
-            routingTableConfiguration(this.routingTable = new RoutingTable());
 
+            routingTableConfigurtion(routes = new RoutingTable());
         }
 
         public HttpServer(int port, Action<IRoutingTable> routes)
             : this("127.0.0.1", port, routes)
         {
-        }
 
-        public HttpServer(Action<IRoutingTable> routingTable)
-            : this(8080, routingTable)
+        }
+        public HttpServer(Action<IRoutingTable> routes)
+            : this(8080, routes)
         {
+
         }
 
-        public void Start()
+        public async Task Start()
         {
             this.serverListener.Start();
 
             Console.WriteLine($"Server started on port {port}");
-            Console.WriteLine("Listening for requests ... ");
+            Console.WriteLine($"Listening for requests...");
             while (true)
             {
-                var connection = serverListener.AcceptTcpClient();
-                var networkStream = connection.GetStream();
-                var requestText = this.ReadRequest(networkStream);
-                Console.WriteLine(requestText);
-                var request = Request.Parse(requestText);
-                var response = routingTable.MatchRequest(request);
-                if (response.PreRenderAction != null)
+                var connection = await serverListener.AcceptTcpClientAsync();
+
+                _ = Task.Run(async () =>
                 {
-                    response.PreRenderAction(request, response);
-                }
-                WriteResponse(networkStream, response);
-                connection.Close();
+                    var networkStream = connection.GetStream();
+
+                    var requestText = await ReadRequest(networkStream);
+                    Console.WriteLine(requestText);
+                    var request = Request.Parse(requestText);
+                    var response = routes.MatchRequest(request);
+                    if (response.PreRenderAction != null)
+                    {
+                        response.PreRenderAction(request, response);
+                    }
+
+                    await WriteResponse(networkStream, response);
+                    connection.Close();
+                });
+
             }
         }
-        private void WriteResponse(NetworkStream networkStream, Response response)
+
+
+
+        private async Task WriteResponse(NetworkStream networkStream, Response response)
         {
             var responseBytes = Encoding.UTF8.GetBytes(response.ToString());
-            networkStream.Write(responseBytes);
+            await networkStream.WriteAsync(responseBytes);
         }
 
-        private string ReadRequest(NetworkStream networkStream)
+        private async Task<string> ReadRequest(NetworkStream networkStream)
         {
-            var bufferLingth = 1024;
-            var buffer = new byte[bufferLingth];
+            var bufferLength = 1024;
+            var buffer = new byte[bufferLength];
+
+            var totalBytes = 0;
+
             var requestBuilder = new StringBuilder();
+
             do
             {
-                var bytesRead = networkStream.Read(buffer, 0, bufferLingth);
+                var bytesRead = await networkStream.ReadAsync(buffer, 0, bufferLength);
+                totalBytes += bytesRead;
+                if (totalBytes > 10 * 1024)
+                {
+                    throw new InvalidDataException("Request is too large.");
+                }
                 requestBuilder.Append(Encoding.UTF8.GetString(buffer, 0, bytesRead));
             }
             while (networkStream.DataAvailable);

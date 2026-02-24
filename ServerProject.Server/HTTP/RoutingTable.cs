@@ -1,9 +1,9 @@
-﻿using WebServer.Server.Common;
-using WebServer.Server.Contracts;
-using WebServer.Server.HTTP_Request;
-using WebServer.Server.Responses;
+﻿using ServerProject.Server.Common;
+using ServerProject.Server.Contracts;
+using ServerProject.Server.HTTP_Request;
+using ServerProject.Server.Responses;
 
-namespace WebServer.Server.HTTP
+namespace ServerProject.Server.HTTP
 {
     public class RoutingTable : IRoutingTable
     {
@@ -18,24 +18,9 @@ namespace WebServer.Server.HTTP
                 [Method.Delete] = new Dictionary<string, Response>()
             };
         }
-        //public RoutingTable()
-        //{
-        //    this.routes = new()
-        //    {
-        //        [Method.Get] = new(),
-        //        [Method.Post] = new(),
-        //        [Method.Put] = new(),
-        //        [Method.Delete] = new()
-        //    };
-        //}                                //Алтернатива
+ 
 
         public IRoutingTable Map(string url, Method method, Response response)
-        //=> method switch
-        //{
-        //    Method.Get => this.MapGet(url, response),
-        //    Method.Post => this.MapPost(url, response),
-        //    _ => throw new InvalidOperationException(
-        //         $"Method '{method}' is not supported.")
         {
             switch (method)
             {

@@ -2,10 +2,10 @@
 using System.Collections.Generic;
 using System.Net.NetworkInformation;
 using System.Text;
-using WebServer.Server.Common;
-using WebServer.Server.HTTP_Request;
+using ServerProject.Server.Common;
+using ServerProject.Server.HTTP_Request;
 
-namespace WebServer.Server.HTTP
+namespace ServerProject.Server.HTTP
 {
     public class ContentResponse : Response
     {
