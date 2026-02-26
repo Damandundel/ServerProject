@@ -1,4 +1,5 @@
 ﻿using System;
+using System.Net;
 using System.Text;
 
 namespace ServerProject.Server.HTTP_Request
@@ -7,14 +8,15 @@ namespace ServerProject.Server.HTTP_Request
     {
         public StatusCode StatusCode { get; init; }
         public HeaderCollection Headers { get; } = new HeaderCollection();
-        public string Body { get; set; }
-        public Action<Request, Response> PreRenderAction { get; protected set; }
+        public string Body { get; set; } = string.Empty;
+        public Action<Request, Response> PreRenderAction { get; protected set; } = (_, _) => { };
+
+        public CookieCollection Cookies { get; set; } = new CookieCollection();
 
         public Response(StatusCode statusCode)
         {
             this.StatusCode = statusCode;
 
-    
             this.Headers.Add("Server", "My Web Server");
             this.Headers.Add("Date", $"{DateTime.UtcNow:r}");
         }
@@ -26,6 +28,10 @@ namespace ServerProject.Server.HTTP_Request
             foreach (var header in this.Headers)
             {
                 result.AppendLine(header.ToString());
+            }
+            foreach (var cookie in Cookies)
+            {
+                result.AppendLine($"Set-Cookie: {cookie}");
             }
             result.AppendLine();
             if (!string.IsNullOrWhiteSpace(this.Body))

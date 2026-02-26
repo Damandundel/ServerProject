@@ -80,7 +80,6 @@ namespace ServerProject.Demo
 
 namespace ServerProject.Server.HTTP
 {
-    // Minimal Request model to satisfy demo usage.
     public class Request
     {
         public Request()
@@ -88,14 +87,14 @@ namespace ServerProject.Server.HTTP
             FormData = new Dictionary<string, string>(StringComparer.OrdinalIgnoreCase);
         }
 
-        // Expose as IEnumerable-compatible dictionary so deconstruction in foreach works:
+      
         public IDictionary<string, string> FormData { get; }
     }
 }
 
 namespace ServerProject.Server.Responses
 {
-    // Minimal Response base type used by the demo.
+  
     public class Response
     {
         public Response()

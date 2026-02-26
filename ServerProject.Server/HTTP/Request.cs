@@ -11,13 +11,15 @@ namespace ServerProject.Server.HTTP_Request
     {
         public Method Method { get; private set; }
         public string Url { get; private set; }
-        public HeaderCollection Headers { get; private set; }
+        public HeaderCollection Headers { get; private set; }  = new HeaderCollection();
+        public CookieCollection Cookies { get; private set; } = new CookieCollection();
         public string Body { get; private set; }
 
         public IReadOnlyDictionary<string, string> FromData { get; private set; } = new Dictionary<string, string>();
 
         public static Request Parse(string request)
         {
+            
             var lines = request.Split("\r\n");
             var startLine = lines.First().Split(" ");
 
@@ -26,6 +28,7 @@ namespace ServerProject.Server.HTTP_Request
             var url = startLine[1];
 
             var headers = ParseHeaders(lines.Skip(1));
+            var cookies = ParseCookies(headers);
 
             var bodyLines = lines.Skip(headers.Count + 2).ToArray();
             var body = string.Join("\r\n", bodyLines);
@@ -37,6 +40,7 @@ namespace ServerProject.Server.HTTP_Request
                 Method = method,
                 Url = url,
                 Headers = headers,
+                Cookies = cookies,
                 Body = body,
                 FromData = form
             };
@@ -49,7 +53,7 @@ namespace ServerProject.Server.HTTP_Request
             }
             catch (Exception)
             {
-                throw new InvalidOperationException($"Method '{method}' is not supportrd");
+                throw new InvalidOperationException($"Method '{method}' is not supported");
             }
         }
         private static HeaderCollection ParseHeaders(IEnumerable<string> headerLines)
@@ -76,6 +80,34 @@ namespace ServerProject.Server.HTTP_Request
             return headers;
         }
 
+        private static CookieCollection ParseCookies(HeaderCollection headers)
+        {
+            var cookieCollection = new CookieCollection();
+
+            const string cookieHeaderName = "Cookie";
+
+            if (headers.Contains(cookieHeaderName))
+            {
+                var cookieHeader = headers[cookieHeaderName];
+                var allCookies = cookieHeader.Split(";");
+
+                foreach (var cookie in allCookies)
+                {
+                    var cookieParts = cookie.Split("=");
+                    if (cookieParts.Length == 2)
+                    {
+                        var cookieName = cookieParts[0].Trim();
+                        var cookieValue = cookieParts[1].Trim();
+                        cookieCollection.Add(cookieName, cookieValue);
+                    }
+                }
+
+            }
+            return cookieCollection;
+           
+        }
+
+        
         private static Dictionary<string, string> ParseForm(HeaderCollection headers, string body)
         {
             var formCollection = new Dictionary<string, string>();
