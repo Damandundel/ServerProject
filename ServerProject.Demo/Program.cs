@@ -1,66 +1,67 @@
-﻿using System;
-using System.Collections.Generic;
-using System.IO;
-using System.Net.Http;
-using System.Threading.Tasks;
+﻿
+using System.Text;
+using System.Web;
+using ServerProject.Server;
+using ServerProject.Server.HTTP_Request;
+using ServerProject.Server.Views;
 using ServerProject.Server;
 using ServerProject.Server.HTTP;
+using ServerProject.Server.HTTP_Request;
 using ServerProject.Server.Responses;
+using ServerProject.Server.Views;
 
-
-namespace ServerProject.Demo
+namespace ServerProject.demo
 {
-    internal class Program
+    public class StartUp
     {
-
-        private const string DownloadForm = @"<form action='/content' method='POST'>
-   <input type='submit' value ='Download Sites Content' /> 
-</form>";
-
-
-        private static string Filename = "content.txt";
-
-        private static void AddFormDataAction(Request request, Response response)
+        private const string Username = "user";
+        private const string Password = "user123";
+        public static async Task Main()
         {
-            response.Body = string.Empty;
+            await DownloadWebAsTextFile(Form.FileName,
+                new string[] { "https://judge.softuni.org/", "https://softuni.org/" });
+            var server = new HttpServer(routes =>
+            {
+                routes
+                .MapGet("/", new TextResponse("Hello from the server!"))
+                .MapGet("/HTML", new HtmlResponse("<h1>HTML response</h1>"))
+                .MapGet("/Redirect", new RedirectResponse("https://softuni.org/"))
+                .MapGet("/TestNameAge", new HtmlResponse(Form.HTML))
+                .MapPost("/TestNameAge", new TextResponse("", AddFormDataAction))
+                .MapGet("/Content", new HtmlResponse(Form.DownloadForm))
+                .MapPost("/Content", new TextFileResponse(Form.FileName))
+                .MapGet("/Cookies", new HtmlResponse("", AddCookiesAction))
+                .MapGet("/Session", new TextResponse("", DisplaySessionInfoAction))
+                .MapGet("/Login", new HtmlResponse(LoginPage.LoginForm))
+                .MapPost("/Login", new HtmlResponse("", LoginAction))
+                .MapGet("/Logout", new HtmlResponse("", LogoutAction))
+                .MapGet("/UserProfile", new HtmlResponse("", GetUserDataAction));
+            });
+            await server.Start();
+        }
 
-            foreach (var (key, value) in request.FormData)
+        private static void AddFormDataAction(
+            Request request, Response response)
+        {
+            response.Body = "";
+
+            foreach (var (key, value) in request.FromData)
             {
                 response.Body += $"{key} - {value}";
                 response.Body += Environment.NewLine;
             }
         }
-
-        static async Task Main(string[] args)
-        {
-
-            await DownloadSitesAsTextFile(Filename, new string[]
-            {
-                "https://www.aboutyou.com",
-                "https://www.softuni.bg",
-                "https://www.youtube.com",
-                "https://www.frogonaquest.com"
-            });
-            var server = new HttpServer(x =>
-            x.MapGet("/html", new HtmlResponse("<h1 style=\"color:blue;\">Hello from my html response</h1>"))
-            .MapGet("/store", new HtmlResponse(Home.Html))
-            .MapGet("/redirect", new ix("https://github.com/"))
-            .MapGet("/login", new HtmlResponse(Form.Html))
-            .MapPost("/login", new TextResponse("", AddFormDataAction))
-            .MapGet("/content", new HtmlResponse(DownloadForm))
-            .MapPost("/content", new TextFileRepsonse(Filename)));
-            await server.Start();
-        }
-
         private static async Task<string> DownloadWebSiteContent(string url)
         {
-            using var client = new HttpClient();
-            var response = await client.GetAsync(url);
-            var html = await response.Content.ReadAsStringAsync();
-            return html;
+            var httpClient = new HttpClient();
+            using (httpClient)
+            {
+                var response = await httpClient.GetAsync(url);
+                var html = await response.Content.ReadAsStringAsync();
+                return html.Substring(0, 2000);
+            }
         }
-
-        private static async Task DownloadSitesAsTextFile(string filename, string[] urls)
+        private static async Task DownloadWebAsTextFile(string fileName, string[] urls)
         {
             var downloads = new List<Task<string>>();
 
@@ -68,42 +69,106 @@ namespace ServerProject.Demo
             {
                 downloads.Add(DownloadWebSiteContent(url));
             }
-
             var responses = await Task.WhenAll(downloads);
 
-            var responsesString = string.Join(Environment.NewLine + new string('-', 100), responses);
+            var responsesString = string.Join(
+                Environment.NewLine + new String('-', 100),
+                responses);
 
-            await File.WriteAllTextAsync(filename, responsesString);
+            await File.WriteAllTextAsync(fileName, responsesString);
         }
-    }
-}
-
-namespace ServerProject.Server.HTTP
-{
-    public class Request
-    {
-        public Request()
+        private static void AddCookiesAction(Request request, Response response)
         {
-            FormData = new Dictionary<string, string>(StringComparer.OrdinalIgnoreCase);
+            var requestHasCookies = request.Cookies
+                .Any(c => c.Name != Session.SessionCookieName);
+            var bodyText = "";
+            if (requestHasCookies)
+            {
+                var cookieText = new StringBuilder();
+                cookieText.AppendLine("<h1>Cookies</h1>");
+
+                cookieText.Append("<table border='1'><tr><th>Name</th><th>Value</th></tr>");
+                foreach (var cookie in request.Cookies)
+                {
+                    cookieText.Append("<tr>");
+                    cookieText.Append($"<td>{HttpUtility.HtmlEncode(cookie.Name)}</td>");
+                    cookieText.Append($"<td>{HttpUtility.HtmlEncode(cookie.Value)}</td>");
+                    cookieText.Append("</tr>");
+                }
+                cookieText.Append("</table>");
+                bodyText = cookieText.ToString();
+            }
+            else
+            {
+                bodyText = "<h1>Cookies set!</h1>";
+
+                response.Cookies.Add("My-Cookie", "My-Value");
+                response.Cookies.Add("My-Second-Cookie", "My-Second-Value");
+            }
+            response.Body = bodyText;
         }
-
-      
-        public IDictionary<string, string> FormData { get; }
-    }
-}
-
-namespace ServerProject.Server.Responses
-{
-  
-    public class Response
-    {
-        public Response()
+        private static void DisplaySessionInfoAction(Request request, Response response)
         {
-            Body = string.Empty;
-            ContentType = "text/plain; charset=utf-8";
+            var sessionExists = request.Session
+                .ContainsKey(Session.SessionCurrentDateKey);
+            var bodyText = "";
+            if (sessionExists)
+            {
+                var currentDate = request.Session[Session.SessionCurrentDateKey];
+                bodyText = $"Stored data: {currentDate}!";
+            }
+            else
+            {
+                bodyText = "Current date stored!";
+            }
+            response.Body = "";
+            response.Body += bodyText;
         }
 
-        public string Body { get; set; }
-        public string ContentType { get; set; }
+        private static void LoginAction(Request request, Response response)
+        {
+            request.Session.Clear();
+
+            var bodyText = "";
+
+            var usernameMatches = request.FromData["Username"] == Username;
+            var passworMatches = request.FromData["Password"] == Password;      //! 
+
+            if (usernameMatches && passworMatches)
+            {
+                request.Session[Session.SessionUserKey] = "MyUserId";
+                response.Cookies.Add(Session.SessionCookieName, request.Session.Id);
+
+                bodyText = "<h3>Logged successfully! </h3>";
+            }
+            else
+            {
+                bodyText = LoginPage.LoginForm;
+            }
+            response.Body = "";
+            response.Body += bodyText;
+        }
+        private static void LogoutAction(Request request, Response response)
+        {
+            request.Session.Clear();
+
+            response.Body = "";
+            response.Body += "<h3>Logged out successfully!</h3>";
+        }
+        private static void GetUserDataAction(Request request, Response response)
+        {
+            if (request.Session.ContainsKey(Session.SessionUserKey))
+            {
+                response.Body = "";
+                response.Body += $"<h3>Currently logged-in user " +
+                    $"is with username '{Username}'</h3>";
+            }
+            else
+            {
+                response.Body = "";
+                response.Body += "<h3>You should first log in" +
+                    "- <a href='/Login'>Login</a></h3>";
+            }
+        }
     }
 }
