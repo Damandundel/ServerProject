@@ -1,16 +1,19 @@
-﻿
+﻿using System;
+using System.Collections.Generic;
+using System.IO;
+using System.Net.Http;
 using System.Text;
+using System.Threading.Tasks;
 using System.Web;
-using ServerProject.Server;
-using ServerProject.Server.HTTP_Request;
-using ServerProject.Server.Views;
 using ServerProject.Server;
 using ServerProject.Server.HTTP;
 using ServerProject.Server.HTTP_Request;
 using ServerProject.Server.Responses;
 using ServerProject.Server.Views;
+using static System.Collections.Specialized.BitVector32;
 
-namespace ServerProject.demo
+
+namespace ServerProject.Demo
 {
     public class StartUp
     {
@@ -132,8 +135,7 @@ namespace ServerProject.demo
             var bodyText = "";
 
             var usernameMatches = request.FromData["Username"] == Username;
-            var passworMatches = request.FromData["Password"] == Password;      //! 
-
+            var passworMatches = request.FromData["Password"] == Password;     
             if (usernameMatches && passworMatches)
             {
                 request.Session[Session.SessionUserKey] = "MyUserId";
